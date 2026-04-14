@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meal Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e0;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    header p {
+      font-size: 13px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .main { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e0;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+
+    .card-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .sublabel { font-size: 12px; color: #aaa; margin-bottom: 12px; line-height: 1.5; }
+    .section-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #666;
+      background: #fff;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .tag:hover { background: #f5f5f0; }
+    .tag.active { background: #e8f0fe; color: #1a56db; border-color: #a4c0f4; }
+
+    .quality-default-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .q-btn {
+      flex: 1; padding: 10px 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      color: #888;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .q-btn:hover { background: #f5f5f0; }
+    .q-btn.active-always { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .q-btn.active-flexible { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+    .q-btn.active-dontcare { background: #f5f5f0; color: #555; border-color: #ccc; }
+
+    .exceptions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .exception-col { border: 1px solid #e5e5e0; border-radius: 10px; padding: 10px; }
+    .exc-header { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+    .exc-always .exc-header { color: #065f46; }
+    .exc-dontcare .exc-header { color: #888; }
+    .exc-desc { font-size: 11px; color: #aaa; margin-bottom: 8px; }
+    .exc-tags { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
+    .exc-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 999px; font-size: 12px; cursor: pointer;
+    }
+    .exc-always .exc-tag { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+    .exc-dontcare .exc-tag { background: #f5f5f0; color: #555; border: 1px solid #ddd; }
+    .exc-tag .remove { font-size: 10px; opacity: 0.5; margin-left: 2px; }
+    .exc-tag:hover .remove { opacity: 1; }
+    .add-exc-row { display: flex; gap: 6px; margin-top: 8px; }
+    .add-exc-row input {
+      flex: 1; font-size: 12px; padding: 5px 8px;
+      border: 1px solid #ddd; border-radius: 8px;
+      color: #1a1a1a; background: #fff;
+      font-family: inherit;
+    }
+    .add-btn {
+      padding: 5px 10px; font-size: 12px; cursor: pointer;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #fff; color: #555; white-space: nowrap;
+      font-family: inherit;
+    }
+    .add-btn:hover { background: #f5f5f0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .ingr-field label { font-size: 12px; color: #888; display: block; margin-bottom: 5px; font-weight: 600; }
+
+    textarea, input[type=text] {
+      width: 100%; font-size: 14px; padding: 9px 11px;
+      border: 1px solid #ddd; border-radius: 8px;
+      color: #1a1a1a; background: #fff;
+      resize: vertical; font-family: inherit;
+    }
+    textarea { min-height: 60px; }
+    textarea:focus, input:focus { outline: none; border-color: #a4c0f4; }
+
+    .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .slider-row input[type=range] { flex: 1; accent-color: #1a56db; }
+    .slider-val { font-size: 15px; font-weight: 600; min-width: 52px; color: #1a1a1a; }
+
+    .generate-btn {
+      width: 100%; padding: 14px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      background: #1a56db;
+      color: #fff;
+      transition: all 0.15s;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    .generate-btn:hover { background: #1648c0; }
+    .generate-btn:active { transform: scale(0.98); }
+
+    .how-it-works {
+      font-size: 13px; color: #888;
+      padding: 12px 14px;
+      background: #f5f5f0;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .step-row { display: flex; align-items: flex-start; margin-bottom: 5px; }
+    .step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #e8f0fe; color: #1a56db;
+      font-size: 11px; font-weight: 700;
+      margin-right: 8px; flex-shrink: 0; margin-top: 1px;
+    }
+
+    .paste-section { margin-bottom: 14px; }
+    .paste-area {
+      width: 100%; font-size: 13px; padding: 9px 11px;
+      border: 1px solid #ddd; border-radius: 8px;
+      color: #1a1a1a; background: #fff;
+      resize: vertical; min-height: 80px;
+      margin-bottom: 8px; font-family: inherit;
+    }
+    .load-btn {
+      padding: 10px 18px; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: 1px solid #ddd; border-radius: 10px;
+      background: #fff; color: #1a1a1a; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .load-btn:hover { background: #f5f5f0; }
+    .error-msg { color: #dc2626; font-size: 13px; margin-top: 6px; display: none; }
+
+    .output-area { display: none; }
+    .output-area.visible { display: block; }
+
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e5e5e0; margin-bottom: 16px; }
+    .tab {
+      padding: 9px 18px; font-size: 14px; cursor: pointer;
+      border: none; background: none; color: #888;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: all 0.15s; font-family: inherit; font-weight: 500;
+    }
+    .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 600; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .est-cost { font-size: 13px; color: #888; margin-bottom: 14px; }
+
+    .day-card {
+      background: #fff; border: 1px solid #e5e5e0;
+      border-radius: 10px; padding: 14px; margin-bottom: 10px;
+    }
+    .day-label { font-size: 11px; font-weight: 700; color: #888; margin-bottom: 10px; letter-spacing: 0.06em; }
+
+    .meal-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 8px; border-radius: 8px;
+      cursor: pointer; transition: background 0.12s; gap: 8px; margin-bottom: 2px;
+    }
+    .meal-row:hover { background: #f5f5f0; }
+    .meal-row.open { background: #f5f5f0; }
+    .meal-left { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; }
+    .meal-type { color: #aaa; font-size: 12px; min-width: 64px; flex-shrink: 0; font-weight: 500; }
+    .meal-name { color: #1a1a1a; font-size: 14px; }
+    .meal-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .method-badge {
+      font-size: 11px; padding: 3px 8px; border-radius: 999px;
+      background: #f5f5f0; color: #888; border: 1px solid #e5e5e0;
+      white-space: nowrap;
+    }
+    .meal-arrow { font-size: 11px; color: #ccc; transition: transform 0.15s; }
+    .meal-row.open .meal-arrow { transform: rotate(90deg); }
+
+    .recipe-panel {
+      display: none; margin: 2px 8px 10px;
+      padding: 12px; background: #f9f9f6;
+      border-radius: 8px; font-size: 13px;
+      border: 1px solid #e5e5e0;
+    }
+    .recipe-panel.visible { display: block; }
+    .recipe-meta { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .meta-badge {
+      padding: 4px 10px; background: #e8f0fe; color: #1a56db;
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .rsection { font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: 0.05em; margin: 10px 0 6px; }
+    .recipe-ingredients { display: flex; flex-wrap: wrap; gap: 5px; }
+    .itag { padding: 3px 9px; border: 1px solid #e5e5e0; border-radius: 999px; font-size: 12px; color: #666; }
+    .recipe-steps { list-style: none; }
+    .recipe-steps li { display: flex; gap: 8px; margin-bottom: 7px; line-height: 1.5; color: #1a1a1a; }
+    .snum { font-size: 11px; font-weight: 700; color: #1a56db; min-width: 16px; padding-top: 2px; }
+
+    .action-btn {
+      display: inline-block; margin-top: 8px;
+      font-size: 12px; padding: 6px 12px;
+      cursor: pointer; border: 1px solid #ddd;
+      border-radius: 8px; background: #fff; color: #1a1a1a;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .action-btn:hover { background: #f5f5f0; }
+    .loading-txt { font-size: 12px; color: #aaa; font-style: italic; margin-bottom: 8px; }
+    .paste-sm {
+      width: 100%; font-size: 13px; padding: 8px 10px;
+      border: 1px solid #ddd; border-radius: 8px;
+      color: #1a1a1a; background: #fff;
+      resize: vertical; min-height: 60px; margin: 6px 0;
+      font-family: inherit;
+    }
+
+    .alt-panel { margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e5e0; }
+    .alt-label { font-size: 11px; font-weight: 700; color: #d97706; margin-bottom: 6px; letter-spacing: 0.05em; }
+
+    .grocery-section { margin-bottom: 14px; }
+    .grocery-cat { font-size: 11px; font-weight: 700; color: #aaa; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .grocery-items { display: flex; flex-wrap: wrap; gap: 6px; }
+    .grocery-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; padding: 6px 12px;
+      border: 1px solid #e5e5e0; border-radius: 999px;
+      cursor: pointer; color: #1a1a1a; background: #fff; transition: all 0.15s;
+    }
+    .grocery-item.checked { text-decoration: line-through; color: #ccc; background: #f5f5f0; border-color: #e5e5e0; }
+    .grocery-item .check { font-size: 10px; color: #ccc; }
+    .grocery-item.checked .check { color: #22c55e; }
+
+    .api-key-section {
+      background: #fffbeb; border: 1px solid #fcd34d;
+      border-radius: 10px; padding: 14px; margin-bottom: 14px;
+    }
+    .api-key-section p { font-size: 13px; color: #92400e; margin-bottom: 8px; line-height: 1.5; }
+    .api-key-section input {
+      font-size: 13px; padding: 8px 10px;
+      border: 1px solid #fcd34d; border-radius: 8px;
+      background: #fff; color: #1a1a1a; margin-bottom: 6px;
+    }
+    .api-key-section a { color: #1a56db; font-size: 12px; }
+
+    @media (max-width: 520px) {
+      .two-col { grid-template-columns: 1fr; }
+      .exceptions-grid { grid-template-columns: 1fr; }
+      .quality-default-row { flex-direction: column; }
+      .meal-name { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥗 Meal Planner</h1>
+  <p>AI-powered weekly meals + grocery list</p>
+</header>
+
+<div class="main">
+
+  <div class="api-key-section" id="api-key-section">
+    <p><strong>To get started, add your Anthropic API key.</strong> This lets the app generate meal plans using AI. Your key is stored only in your browser — never sent anywhere except Anthropic's servers.</p>
+    <input type="text" id="api-key-input" placeholder="sk-ant-..." style="width:100%;" />
+    <br/>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank">Get a free API key at console.anthropic.com →</a>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Dietary preferences</p>
+    <p class="sublabel">Select all that apply.</p>
+    <div class="tag-grid" id="diet-tags">
+      <div class="tag" data-val="diabetes friendly">Diabetes friendly</div>
+      <div class="tag" data-val="vegan">Vegan</div>
+      <div class="tag" data-val="vegetarian">Vegetarian</div>
+      <div class="tag" data-val="gluten free">Gluten free</div>
+      <div class="tag" data-val="dairy free">Dairy free</div>
+      <div class="tag" data-val="low carb">Low carb</div>
+      <div class="tag" data-val="high protein">High protein</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Preferred cooking methods</p>
+    <p class="sublabel">Select all you use. AI prioritizes these when writing meals.</p>
+    <div class="tag-grid" id="method-tags">
+      <div class="tag active" data-val="air fryer">🌀 Air fryer</div>
+      <div class="tag" data-val="oven">🔥 Oven</div>
+      <div class="tag" data-val="stovetop">🍳 Stovetop</div>
+      <div class="tag" data-val="grill">🥩 Grill</div>
+      <div class="tag" data-val="slow cooker">🥘 Slow cooker</div>
+      <div class="tag" data-val="no cook">🥗 No cook</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Quality tiers</p>
+    <p class="sublabel">Pick a default for all groceries, then add exceptions below.</p>
+    <p class="section-label">Default quality for all groceries</p>
+    <div class="quality-default-row">
+      <button class="q-btn" id="qbtn-always">Always organic</button>
+      <button class="q-btn active-flexible" id="qbtn-flexible">Flexible</button>
+      <button class="q-btn" id="qbtn-dontcare">Don't care</button>
+    </div>
+    <p class="section-label">Exceptions to your default</p>
+    <div class="exceptions-grid">
+      <div class="exception-col exc-always">
+        <div class="exc-header">Always organic</div>
+        <div class="exc-desc">Force organic for these</div>
+        <div class="exc-tags" id="exc-always"></div>
+        <div class="add-exc-row">
+          <input type="text" placeholder="e.g. Beef, Berries" id="add-always-input" />
+          <button class="add-btn" id="addbtn-always">+ Add</button>
+        </div>
+      </div>
+      <div class="exception-col exc-dontcare">
+        <div class="exc-header">Don't care</div>
+        <div class="exc-desc">Conventional is fine for these</div>
+        <div class="exc-tags" id="exc-dontcare"></div>
+        <div class="add-exc-row">
+          <input type="text" placeholder="e.g. Spices, Snacks" id="add-dontcare-input" />
+          <button class="add-btn" id="addbtn-dontcare">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Ingredient preferences</p>
+    <div class="two-col" style="margin-top:10px;">
+      <div class="ingr-field">
+        <label>Preferred ingredients</label>
+        <textarea id="ingr-love" placeholder="e.g. chicken thighs, flank steak, zucchini..."></textarea>
+      </div>
+      <div class="ingr-field">
+        <label>Never include</label>
+        <textarea id="ingr-never" placeholder="e.g. mushrooms, HFCS, shellfish..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Budget & notes</p>
+    <div class="slider-row" style="margin-top:12px;">
+      <input type="range" min="50" max="250" value="155" step="5" id="budget-slider" />
+      <span class="slider-val" id="budget-val">$155</span>
+    </div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Health first — budget is a loose guide</p>
+    <textarea id="notes" placeholder="e.g. we love Mexican, Asian, Mediterranean food..."></textarea>
+  </div>
+
+  <button class="generate-btn" id="gen-btn">Generate my meal plan →</button>
+
+  <div id="loading-msg" style="display:none; text-align:center; padding:20px; color:#888; font-size:14px;">
+    Building your meal plan... ⏳
+  </div>
+
+  <div id="error-area" style="display:none;" class="error-msg"></div>
+
+  <div class="output-area" id="output-area">
+    <div class="tabs">
+      <button class="tab active" id="tab-meals">Meal plan</button>
+      <button class="tab" id="tab-grocery">Grocery list</button>
+    </div>
+    <div class="panel active" id="panel-meals">
+      <p class="est-cost" id="est-cost"></p>
+      <div id="meals-content"></div>
+    </div>
+    <div class="panel" id="panel-grocery">
+      <p style="font-size:13px;color:#aaa;margin-bottom:14px;">Tap items to check them off as you shop</p>
+      <div id="grocery-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var qualityDefault = 'flexible';
+  var excData = { always: ['Beef', 'Chicken', 'Eggs', 'Berries'], dontcare: ['Spices', 'Snacks'] };
+  var recipes = {};
+  var altMeals = {};
+
+  // --- Quality default buttons ---
+  function setDefault(tier) {
+    qualityDefault = tier;
+    ['always', 'flexible', 'dontcare'].forEach(function (t) {
+      var btn = document.getElementById('qbtn-' + t);
+      btn.className = 'q-btn' + (t === tier ? ' active-' + t : '');
+    });
+  }
+
+  document.getElementById('qbtn-always').addEventListener('click', function () { setDefault('always'); });
+  document.getElementById('qbtn-flexible').addEventListener('click', function () { setDefault('flexible'); });
+  document.getElementById('qbtn-dontcare').addEventListener('click', function () { setDefault('dontcare'); });
+
+  // --- Exceptions ---
+  function renderExc() {
+    ['always', 'dontcare'].forEach(function (tier) {
+      var el = document.getElementById('exc-' + tier);
+      el.innerHTML = excData[tier].map(function (item) {
+        return '<span class="exc-tag"><span>' + item + '</span><span class="remove" data-tier="' + tier + '" data-item="' + item + '"> ✕</span></span>';
+      }).join('');
+      el.querySelectorAll('.remove').forEach(function (r) {
+        r.addEventListener('click', function () {
+          excData[this.dataset.tier] = excData[this.dataset.tier].filter(function (x) { return x !== r.dataset.item; });
+          renderExc();
+        });
+      });
+    });
+  }
+
+  function addExc(tier) {
+    var input = document.getElementById('add-' + tier + '-input');
+    var val = input.value.trim();
+    if (!val) return;
+    if (!excData[tier].includes(val)) excData[tier].push(val);
+    input.value = '';
+    renderExc();
+  }
+
+  document.getElementById('addbtn-always').addEventListener('click', function () { addExc('always'); });
+  document.getElementById('addbtn-dontcare').addEventListener('click', function () { addExc('dontcare'); });
+  document.getElementById('add-always-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') addExc('always'); });
+  document.getElementById('add-dontcare-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') addExc('dontcare'); });
+
+  renderExc();
+
+  // --- Tag toggles ---
+  document.querySelectorAll('#diet-tags .tag, #method-tags .tag').forEach(function (t) {
+    t.addEventListener('click', function () { t.classList.toggle('active'); });
+  });
+
+  // --- Budget slider ---
+  document.getElementById('budget-slider').addEventListener('input', function () {
+    document.getElementById('budget-val').textContent = '$' + this.value;
+  });
+
+  // --- Tabs ---
+  document.getElementById('tab-meals').addEventListener('click', function () { switchTab('meals'); });
+  document.getElementById('tab-grocery').addEventListener('click', function () { switchTab('grocery'); });
+
+  function switchTab(name) {
+    document.getElementById('tab-meals').classList.toggle('active', name === 'meals');
+    document.getElementById('tab-grocery').classList.toggle('active', name === 'grocery');
+    document.getElementById('panel-meals').classList.toggle('active', name === 'meals');
+    document.getElementById('panel-grocery').classList.toggle('active', name === 'grocery');
+  }
+
+  // --- API call ---
+  function getApiKey() {
+    return document.getElementById('api-key-input').value.trim();
+  }
+
+  async function callClaude(prompt) {
+    var key = getApiKey();
+    if (!key) throw new Error('Please enter your Anthropic API key above.');
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      var err = await res.json().catch(function () { return {}; });
+      throw new Error(err.error && err.error.message ? err.error.message : 'API error ' + res.status);
+    }
+    var data = await res.json();
+    return data.content.filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
+  }
+
+  function parseJSON(raw) {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  }
+
+  function getSettings() {
+    var diets = Array.from(document.querySelectorAll('#diet-tags .tag.active')).map(function (t) { return t.dataset.val; });
+    var methods = Array.from(document.querySelectorAll('#method-tags .tag.active')).map(function (t) { return t.dataset.val; });
+    return {
+      diets: diets,
+      methods: methods,
+      budget: document.getElementById('budget-slider').value,
+      notes: document.getElementById('notes').value.trim(),
+      love: document.getElementById('ingr-love').value.trim(),
+      never: document.getElementById('ingr-never').value.trim(),
+      qualityStr: 'Default: ' + qualityDefault + '. Always organic exceptions: ' + (excData.always.join(', ') || 'none') + '. Conventional exceptions: ' + (excData.dontcare.join(', ') || 'none') + '.'
+    };
+  }
+
+  // --- Generate meal plan ---
+  document.getElementById('gen-btn').addEventListener('click', async function () {
+    var s = getSettings();
+    var btn = document.getElementById('gen-btn');
+    var loadingMsg = document.getElementById('loading-msg');
+    var errorArea = document.getElementById('error-area');
+    errorArea.style.display = 'none';
+
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    loadingMsg.style.display = 'block';
+
+    var prompt = 'Generate a 7-day meal plan for 3-4 people.\nDietary: ' + (s.diets.join(', ') || 'none') + '.\nCooking methods (prefix each meal name with method in brackets like [Air fryer]): ' + (s.methods.join(', ') || 'any') + '.\nBudget: ~$' + s.budget + '/week.\nPreferred ingredients: ' + (s.love || 'none') + '.\nNever include: ' + (s.never || 'none') + '.\nQuality: ' + s.qualityStr + '\nNotes: ' + (s.notes || 'none') + '.\nReply ONLY with raw JSON, no markdown, no backticks:\n{"estimatedCost":"$X-$Y","days":[{"day":"Monday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Tuesday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Wednesday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Thursday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Friday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Saturday","breakfast":"...","lunch":"...","dinner":"..."},{"day":"Sunday","breakfast":"...","lunch":"...","dinner":"..."}],"groceryList":{"Produce":["..."],"Proteins":["..."],"Dairy & Eggs":["..."],"Grains & Bread":["..."],"Pantry & Spices":["..."],"Frozen":["..."],"Other":["..."]}}';
+
+    try {
+      var raw = await callClaude(prompt);
+      var parsed = parseJSON(raw);
+      renderMeals(parsed);
+      renderGrocery(parsed.groceryList);
+      document.getElementById('est-cost').textContent = 'Estimated weekly cost: ' + parsed.estimatedCost;
+      document.getElementById('output-area').classList.add('visible');
+      document.getElementById('output-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      errorArea.textContent = e.message;
+      errorArea.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Regenerate meal plan →';
+    loadingMsg.style.display = 'none';
+  });
+
+  // --- Meal rendering ---
+  function parseMealMethod(name) {
+    var match = name.match(/^\[([^\]]+)\]\s*/);
+    if (match) return { method: match[1], cleanName: name.replace(match[0], '') };
+    return { method: 'Any', cleanName: name };
+  }
+
+  function renderMeals(data) {
+    var html = data.days.map(function (d) {
+      var rows = ['breakfast', 'lunch', 'dinner'].map(function (type) {
+        var parsed = parseMealMethod(d[type]);
+        var enc = encodeURIComponent(d[type]);
+        return '<div class="meal-row" data-enc="' + enc + '" data-type="' + type + '">' +
+          '<div class="meal-left"><span class="meal-type">' + type.charAt(0).toUpperCase() + type.slice(1) + '</span>' +
+          '<span class="meal-name">' + parsed.cleanName + '</span></div>' +
+          '<div class="meal-right"><span class="method-badge">' + parsed.method + '</span><span class="meal-arrow">▶</span></div>' +
+          '</div><div class="recipe-panel"></div>';
+      }).join('');
+      return '<div class="day-card"><div class="day-label">' + d.day.toUpperCase() + '</div>' + rows + '</div>';
+    }).join('');
+
+    document.getElementById('meals-content').innerHTML = html;
+
+    document.querySelectorAll('.meal-row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var enc = row.getAttribute('data-enc');
+        var type = row.getAttribute('data-type');
+        var panel = row.nextElementSibling;
+        row.classList.toggle('open');
+        if (panel.classList.contains('visible')) { panel.classList.remove('visible'); return; }
+        panel.classList.add('visible');
+        var mealName = decodeURIComponent(enc);
+        if (recipes[mealName]) { renderRecipeInPanel(panel, recipes[mealName], mealName, type); return; }
+        panel.innerHTML = '<p class="loading-txt">Tap below to load full recipe instructions.</p><button class="action-btn" data-enc="' + enc + '" data-type="' + type + '">Get recipe instructions →</button>';
+        panel.querySelector('.action-btn').addEventListener('click', function (e) {
+          e.stopPropagation();
+          requestRecipe(panel, mealName, type);
+        });
+      });
+    });
+  }
+
+  async function requestRecipe(panel, mealName, mealType) {
+    var s = getSettings();
+    panel.innerHTML = '<p class="loading-txt">Fetching recipe... ⏳</p>';
+    try {
+      var prompt = 'Give me a recipe for "' + mealName + '" (' + mealType + ') for 3-4 people. Cooking methods available: ' + (s.methods.join(', ') || 'any') + '. Dietary: ' + (s.diets.join(', ') || 'none') + '. Never include: ' + (s.never || 'none') + '. Reply ONLY raw JSON no markdown: {"mealName":"...","cookingMethod":"...","temp":"...","time":"...","servings":"3-4","ingredients":["..."],"steps":["..."]}';
+      var raw = await callClaude(prompt);
+      var parsed = parseJSON(raw);
+      recipes[mealName] = parsed;
+      renderRecipeInPanel(panel, parsed, mealName, mealType);
+    } catch (e) {
+      panel.innerHTML = '<p style="color:#dc2626;font-size:13px;">Error: ' + e.message + '</p>';
+    }
+  }
+
+  function renderRecipeInPanel(panel, r, mealName, mealType) {
+    var altHTML = altMeals[mealName]
+      ? '<div class="alt-panel"><div class="alt-label">ALTERNATIVE METHOD</div>' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">' + altMeals[mealName].mealName + '</div>' +
+        '<div class="recipe-meta"><span class="meta-badge">' + altMeals[mealName].cookingMethod + '</span>' +
+        (altMeals[mealName].temp ? '<span class="meta-badge">' + altMeals[mealName].temp + '</span>' : '') +
+        '<span class="meta-badge">⏱ ' + altMeals[mealName].time + '</span></div>' +
+        '<div class="rsection">STEPS</div><ol class="recipe-steps">' +
+        altMeals[mealName].steps.map(function (s, i) { return '<li><span class="snum">' + (i + 1) + '</span><span>' + s + '</span></li>'; }).join('') +
+        '</ol></div>'
+      : '<button class="action-btn" data-altbtn="1" style="margin-top:8px;">Try a different cooking method →</button>';
+
+    panel.innerHTML =
+      '<div class="recipe-meta">' +
+      '<span class="meta-badge">' + (r.cookingMethod || 'Method') + '</span>' +
+      (r.temp ? '<span class="meta-badge">' + r.temp + '</span>' : '') +
+      '<span class="meta-badge">⏱ ' + r.time + '</span>' +
+      '<span class="meta-badge">👥 ' + r.servings + '</span>' +
+      '</div>' +
+      '<div class="rsection">INGREDIENTS</div>' +
+      '<div class="recipe-ingredients">' + r.ingredients.map(function (i) { return '<span class="itag">' + i + '</span>'; }).join('') + '</div>' +
+      '<div class="rsection">STEPS</div>' +
+      '<ol class="recipe-steps">' + r.steps.map(function (s, i) { return '<li><span class="snum">' + (i + 1) + '</span><span>' + s + '</span></li>'; }).join('') + '</ol>' +
+      altHTML;
+
+    var altBtn = panel.querySelector('[data-altbtn="1"]');
+    if (altBtn) {
+      altBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        requestAlt(panel, mealName, mealType, r.cookingMethod || '');
+      });
+    }
+  }
+
+  async function requestAlt(panel, mealName, mealType, currentMethod) {
+    var s = getSettings();
+    var allMethods = ['air fryer', 'oven', 'stovetop', 'grill', 'slow cooker', 'no cook'];
+    var alternatives = allMethods.filter(function (m) { return !currentMethod.toLowerCase().includes(m); }).join(', ');
+    var existingContent = panel.innerHTML;
+    panel.innerHTML = existingContent.replace(/<button[^>]*data-altbtn="1"[^>]*>[^<]*<\/button>/, '<p class="loading-txt" style="margin-top:8px;">Fetching alternative method... ⏳</p>');
+    try {
+      var prompt = 'Give me the same meal "' + mealName + '" but using a DIFFERENT cooking method (not ' + currentMethod + '). Try one of: ' + alternatives + '. 3-4 people. Dietary: ' + (s.diets.join(', ') || 'none') + '. Never: ' + (s.never || 'none') + '. Reply ONLY raw JSON no markdown: {"mealName":"...","cookingMethod":"...","temp":"...","time":"...","servings":"3-4","ingredients":["..."],"steps":["..."]}';
+      var raw = await callClaude(prompt);
+      var parsed = parseJSON(raw);
+      altMeals[mealName] = parsed;
+      renderRecipeInPanel(panel, recipes[mealName], mealName, mealType);
+    } catch (e) {
+      panel.innerHTML += '<p style="color:#dc2626;font-size:13px;margin-top:6px;">Error: ' + e.message + '</p>';
+    }
+  }
+
+  // --- Grocery rendering ---
+  function renderGrocery(list) {
+    document.getElementById('grocery-content').innerHTML = Object.entries(list)
+      .filter(function (e) { return e[1] && e[1].length; })
+      .map(function (e) {
+        var cat = e[0], items = e[1];
+        return '<div class="grocery-section"><div class="grocery-cat">' + cat.toUpperCase() + '</div>' +
+          '<div class="grocery-items">' +
+          items.map(function (item) {
+            return '<div class="grocery-item"><span class="check">✓</span>' + item + '</div>';
+          }).join('') +
+          '</div></div>';
+      }).join('');
+
+    document.querySelectorAll('.grocery-item').forEach(function (el) {
+      el.addEventListener('click', function () { el.classList.toggle('checked'); });
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
