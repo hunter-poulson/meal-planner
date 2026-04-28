@@ -320,6 +320,39 @@
     </div>
   </div>
 
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon">🌱</div><div class="card-title">Quality tiers</div></div>
+    <div class="card-subtitle">Set a default, then add exceptions for anything different.</div>
+    <div class="section-label">Default quality for all groceries</div>
+    <div class="quality-default-row">
+      <button class="q-btn" id="qbtn-always">Always organic</button>
+      <button class="q-btn active-flexible" id="qbtn-flexible">Flexible</button>
+      <button class="q-btn" id="qbtn-dontcare">Don't care</button>
+    </div>
+    <div class="section-label">Exceptions to your default</div>
+    <div class="exceptions-grid">
+      <div class="exception-col exc-always">
+        <div class="exc-header">Always organic</div>
+        <div class="exc-desc">Force organic for these</div>
+        <div class="exc-tags" id="exc-always"></div>
+        <div class="add-exc-row">
+          <input type="text" placeholder="e.g. Beef, Berries" id="add-always-input" />
+          <button class="add-btn" id="addbtn-always">+ Add</button>
+        </div>
+      </div>
+      <div class="exception-col exc-dontcare">
+        <div class="exc-header">Don't care</div>
+        <div class="exc-desc">Conventional is fine</div>
+        <div class="exc-tags" id="exc-dontcare"></div>
+        <div class="add-exc-row">
+          <input type="text" placeholder="e.g. Spices, Snacks" id="add-dontcare-input" />
+          <button class="add-btn" id="addbtn-dontcare">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header"><div class="card-icon">💚</div><div class="card-title">Ingredient preferences</div></div>
     <div class="two-col" style="margin-top:12px;">
