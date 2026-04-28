@@ -226,6 +226,9 @@
     .meal-title { font-size: 14px; font-weight: 700; color: var(--green); font-family: 'Fraunces', serif; margin-bottom: 2px; }
     .meal-text { display: flex; flex-direction: column; }
     .drag-handle { font-size: 16px; color: var(--text-muted); cursor: grab; padding: 0 6px 0 0; flex-shrink: 0; user-select: none; }
+    .replace-btn { font-size: 14px; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--border); background: var(--white); color: var(--text-muted); cursor: pointer; transition: all 0.15s; flex-shrink: 0; font-family: inherit; }
+    .replace-btn:hover { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+    .replace-btn.loading { opacity: 0.5; pointer-events: none; }
     .drag-handle:active { cursor: grabbing; }
     .meal-row.drag-over { background: var(--green-pale); border: 1.5px dashed var(--green); border-radius: 8px; }
     .meal-row[draggable] { cursor: default; }
@@ -564,14 +567,24 @@ document.addEventListener("DOMContentLoaded", function() {
     btn.innerHTML = '<div class="mini-spinner" style="border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;"></div> Generating...';
     loadingCard.style.display = 'block';
 
-    var prompt = 'Generate a 7-day meal plan for 3-4 people.\nDietary: ' + (s.diets.join(', ') || 'none') + '.\nCooking methods (prefix description with method in brackets e.g. [Air fryer]): ' + (s.methods.join(', ') || 'any') + '.\nBudget: ~$' + s.budget + '/week.\nLove: ' + (s.love || 'none') + '. Never: ' + (s.never || 'none') + '.\nQuality: ' + s.qualityStr + '\nNotes: ' + (s.notes || 'none') + '.\nIMPORTANT: Keep descriptions SHORT (under 12 words each). Include a 2-4 word title for each meal.\nReply ONLY raw JSON no markdown: {"estimatedCost":"$X-$Y","days":[{"day":"Monday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Tuesday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Wednesday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Thursday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Friday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Saturday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Sunday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}}],"groceryList":{"Produce":["..."],"Proteins":["..."],"Dairy & Eggs":["..."],"Grains & Bread":["..."],"Pantry & Spices":["..."],"Frozen":["..."],"Other":["..."]}}';
+    var context = 'Dietary: ' + (s.diets.join(', ') || 'none') + '. Methods: ' + (s.methods.join(', ') || 'any') + '. Budget ~$' + s.budget + '/week. Love: ' + (s.love || 'none') + '. Never: ' + (s.never || 'none') + '. Quality: ' + s.qualityStr + ' Notes: ' + (s.notes || 'none');
+
+    var mealPrompt = 'Generate a 7-day meal plan for 3-4 people. ' + context + '. For each meal: a 2-4 word title, a SHORT description under 10 words prefixed with cooking method in brackets e.g. [Air fryer], and 4-6 key ingredients as an array. Reply ONLY raw JSON: {"estimatedCost":"$X-$Y","days":[{"day":"Monday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Tuesday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Wednesday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Thursday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Friday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Saturday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Sunday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}}]}';
+
+    var groceryPrompt = 'Generate a weekly grocery list for 3-4 people. ' + context + '. Reply ONLY raw JSON: {"groceryList":{"Produce":["..."],"Proteins":["..."],"Dairy & Eggs":["..."],"Grains & Bread":["..."],"Pantry & Spices":["..."],"Frozen":["..."],"Other":["..."]}}';
 
     try {
-      var raw = await callClaude(prompt);
-      var parsed = parseJSON(raw);
-      renderMeals(parsed);
-      renderGrocery(parsed.groceryList);
-      document.getElementById('est-cost').innerHTML = '<div class="cost-badge">🌿 Est. weekly cost: ' + parsed.estimatedCost + '</div>';
+      loadingCard.querySelector('p').textContent = 'Building your meal plan...';
+      var mealRaw = await callClaude(mealPrompt);
+      var mealParsed = parseJSON(mealRaw);
+
+      loadingCard.querySelector('p').textContent = 'Building your grocery list...';
+      var groceryRaw = await callClaude(groceryPrompt);
+      var groceryParsed = parseJSON(groceryRaw);
+
+      renderMeals(mealParsed);
+      renderGrocery(groceryParsed.groceryList);
+      document.getElementById('est-cost').innerHTML = '<div class="cost-badge">🌿 Est. weekly cost: ' + mealParsed.estimatedCost + '</div>';
       document.getElementById('output-area').classList.add('visible');
       document.getElementById('output-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) {
@@ -584,7 +597,7 @@ document.addEventListener("DOMContentLoaded", function() {
     loadingCard.style.display = 'none';
   });
 
-  // mealData is now {title, description} object
+  // mealData is now {title, description, ingredients} object
   function parseMealMethod(desc) {
     var match = desc.match(/^\[([^\]]+)\]\s*/);
     if (match) return { method: match[1], cleanDesc: desc.replace(match[0], '') };
@@ -598,9 +611,9 @@ document.addEventListener("DOMContentLoaded", function() {
     mealPlanData = data.days.map(function(d) {
       return {
         day: d.day,
-        breakfast: typeof d.breakfast === 'object' ? d.breakfast : { title: '', description: d.breakfast },
-        lunch: typeof d.lunch === 'object' ? d.lunch : { title: '', description: d.lunch },
-        dinner: typeof d.dinner === 'object' ? d.dinner : { title: '', description: d.dinner }
+        breakfast: typeof d.breakfast === 'object' ? d.breakfast : { title: '', description: d.breakfast, ingredients: [] },
+        lunch: typeof d.lunch === 'object' ? d.lunch : { title: '', description: d.lunch, ingredients: [] },
+        dinner: typeof d.dinner === 'object' ? d.dinner : { title: '', description: d.dinner, ingredients: [] }
       };
     });
     renderMealCards();
@@ -621,7 +634,7 @@ document.addEventListener("DOMContentLoaded", function() {
           (meal.title ? '<div class="meal-title">' + meal.title + '</div>' : '') +
           '<div class="meal-name">' + p.cleanDesc + '</div>' +
           '</div></div>' +
-          '<div class="meal-right"><span class="method-badge">' + p.method + '</span><span class="meal-arrow">▶</span></div>' +
+          '<div class="meal-right"><button class="replace-btn" data-day="' + dayIdx + '" data-type="' + type + '" title="Replace this meal">↺</button><span class="method-badge">' + p.method + '</span><span class="meal-arrow">▶</span></div>' +
           '</div><div class="recipe-panel"></div>';
       }).join('');
       return '<div class="day-card" data-day="' + dayIdx + '"><div class="day-header"><span class="day-label">' + d.day.toUpperCase() + '</span><span class="day-dot"></span></div>' + rows + '</div>';
@@ -633,24 +646,72 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function attachMealEvents() {
+    document.querySelectorAll('.replace-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dayIdx = parseInt(btn.getAttribute('data-day'));
+        var type = btn.getAttribute('data-type');
+        btn.classList.add('loading');
+        btn.textContent = '...';
+        replaceMeal(dayIdx, type).finally(function() {
+          btn.classList.remove('loading');
+          btn.textContent = '↺';
+        });
+      });
+    });
+
     document.querySelectorAll('.meal-row').forEach(function (row) {
       row.addEventListener('click', function (e) {
         if (e.target.classList.contains('drag-handle')) return;
+        if (e.target.classList.contains('replace-btn')) return;
         var enc = row.getAttribute('data-enc');
         var type = row.getAttribute('data-type');
+        var dayIdx = parseInt(row.getAttribute('data-day'));
         var panel = row.nextElementSibling;
         row.classList.toggle('open');
         if (panel.classList.contains('visible')) { panel.classList.remove('visible'); return; }
         panel.classList.add('visible');
         var mealName = decodeURIComponent(enc);
+        var mealIngredients = mealPlanData[dayIdx] && mealPlanData[dayIdx][type] ? (mealPlanData[dayIdx][type].ingredients || []) : [];
         if (recipes[mealName]) { renderRecipeInPanel(panel, recipes[mealName], mealName, type); return; }
-        panel.innerHTML = '<button class="action-btn">🍽 Get recipe & instructions</button>';
+        // Show ingredients immediately, then offer full recipe
+        var ingrHTML = mealIngredients.length
+          ? '<div class="rsection">KEY INGREDIENTS</div><div class="recipe-ingredients">' + mealIngredients.map(function(i) { return '<span class="itag">' + i + '</span>'; }).join('') + '</div>'
+          : '';
+        panel.innerHTML = ingrHTML + '<button class="action-btn" style="margin-top:10px;">🍽 Get full recipe & steps</button>';
         panel.querySelector('.action-btn').addEventListener('click', function (e2) {
           e2.stopPropagation();
           requestRecipe(panel, mealName, type);
         });
       });
     });
+  }
+
+  async function replaceMeal(dayIdx, type) {
+    var s = getSettings();
+    var currentMeals = mealPlanData.map(function(d) {
+      return d.breakfast.title + ', ' + d.lunch.title + ', ' + d.dinner.title;
+    }).join('; ');
+    var prompt = 'Generate ONE replacement ' + type + ' meal for 3-4 people. ' +
+      'Dietary: ' + (s.diets.join(', ') || 'none') + '. Methods: ' + (s.methods.join(', ') || 'any') + '. Love: ' + (s.love || 'none') + '. Never: ' + (s.never || 'none') + '. Quality: ' + s.qualityStr +
+      ' Do NOT repeat any of these existing meals: ' + currentMeals + '.' +
+      ' Reply ONLY raw JSON: {"title":"...","description":"[Method] short description under 10 words","ingredients":["...","...","...","...","..."]}';
+    try {
+      var raw = await callClaude(prompt);
+      var parsed = parseJSON(raw);
+      mealPlanData[dayIdx][type] = parsed;
+      renderMealCards();
+      // Regenerate grocery list
+      var allMeals = mealPlanData.map(function(d) {
+        return d.day + ': ' + d.breakfast.title + ' / ' + d.lunch.title + ' / ' + d.dinner.title;
+      }).join(', ');
+      var groceryPrompt = 'Generate a weekly grocery list for 3-4 people based on these meals: ' + allMeals + '. Dietary: ' + (s.diets.join(', ') || 'none') + '. Never: ' + (s.never || 'none') + '. Quality: ' + s.qualityStr + '. Reply ONLY raw JSON: {"groceryList":{"Produce":["..."],"Proteins":["..."],"Dairy & Eggs":["..."],"Grains & Bread":["..."],"Pantry & Spices":["..."],"Frozen":["..."],"Other":["..."]}}';
+      var groceryRaw = await callClaude(groceryPrompt);
+      var groceryParsed = parseJSON(groceryRaw);
+      renderGrocery(groceryParsed.groceryList);
+    } catch(e) {
+      alert('Could not replace meal: ' + e.message);
+    }
   }
 
   var dragSrc = null;
