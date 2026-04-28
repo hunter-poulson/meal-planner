@@ -569,14 +569,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
     var context = 'Dietary: ' + (s.diets.join(', ') || 'none') + '. Methods: ' + (s.methods.join(', ') || 'any') + '. Budget ~$' + s.budget + '/week. Love: ' + (s.love || 'none') + '. Never: ' + (s.never || 'none') + '. Quality: ' + s.qualityStr + ' Notes: ' + (s.notes || 'none');
 
-    var mealPrompt = 'Generate a 7-day meal plan for 3-4 people. ' + context + '. For each meal: a 2-4 word title, a SHORT description under 10 words prefixed with cooking method in brackets e.g. [Air fryer], and 4-6 key ingredients as an array. Reply ONLY raw JSON: {"estimatedCost":"$X-$Y","days":[{"day":"Monday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Tuesday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Wednesday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Thursday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Friday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Saturday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}},{"day":"Sunday","breakfast":{"title":"...","description":"...","ingredients":["..."]},"lunch":{"title":"...","description":"...","ingredients":["..."]},"dinner":{"title":"...","description":"...","ingredients":["..."]}}]}';
+    // Step 1: Just meal titles and descriptions — no ingredients yet
+    var mealPrompt = 'Generate a 7-day meal plan for 3-4 people. ' + context + '. For each meal give a 2-4 word title and a SHORT description under 10 words prefixed with cooking method e.g. [Air fryer]. Reply ONLY raw JSON: {"estimatedCost":"$X-$Y","days":[{"day":"Monday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Tuesday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Wednesday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Thursday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Friday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Saturday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}},{"day":"Sunday","breakfast":{"title":"...","description":"..."},"lunch":{"title":"...","description":"..."},"dinner":{"title":"...","description":"..."}}]}';
 
+    // Step 2: Grocery list only
     var groceryPrompt = 'Generate a weekly grocery list for 3-4 people. ' + context + '. Reply ONLY raw JSON: {"groceryList":{"Produce":["..."],"Proteins":["..."],"Dairy & Eggs":["..."],"Grains & Bread":["..."],"Pantry & Spices":["..."],"Frozen":["..."],"Other":["..."]}}';
 
     try {
       loadingCard.querySelector('p').textContent = 'Building your meal plan...';
       var mealRaw = await callClaude(mealPrompt);
       var mealParsed = parseJSON(mealRaw);
+
+      // Add empty ingredients arrays — we'll fetch per meal on demand
+      mealParsed.days.forEach(function(d) {
+        ['breakfast','lunch','dinner'].forEach(function(t) {
+          if (!d[t].ingredients) d[t].ingredients = [];
+        });
+      });
 
       loadingCard.querySelector('p').textContent = 'Building your grocery list...';
       var groceryRaw = await callClaude(groceryPrompt);
@@ -754,7 +763,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var s = getSettings();
     panel.innerHTML = '<div class="loading-inline"><div class="mini-spinner"></div>Fetching recipe...</div>';
     try {
-      var raw = await callClaude('Recipe for "' + mealName + '" (' + mealType + '), 3-4 people. Methods: ' + (s.methods.join(', ') || 'any') + '. Dietary: ' + (s.diets.join(', ') || 'none') + '. Never: ' + (s.never || 'none') + '. Reply ONLY raw JSON: {"mealName":"...","cookingMethod":"...","temp":"...","time":"...","servings":"3-4","ingredients":["..."],"steps":["..."]}');
+      var raw = await callClaude('Give a recipe for "' + mealName + '" (' + mealType + ') for 3-4 people. Methods: ' + (s.methods.join(', ') || 'any') + '. Dietary: ' + (s.diets.join(', ') || 'none') + '. Never: ' + (s.never || 'none') + '. Keep steps SHORT, max 6 steps. Reply ONLY raw JSON: {"mealName":"...","cookingMethod":"...","temp":"...","time":"...","servings":"3-4","ingredients":["..."],"steps":["..."]}');
       var parsed = parseJSON(raw);
       recipes[mealName] = parsed;
       renderRecipeInPanel(panel, parsed, mealName, mealType);
