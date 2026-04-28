@@ -518,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -530,7 +530,16 @@ document.addEventListener("DOMContentLoaded", function() {
     return data.content.filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
   }
 
-  function parseJSON(raw) { return JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+  function parseJSON(raw) {
+    var cleaned = raw.replace(/```json|```/g, '').trim();
+    // Find the first { and last } to extract just the JSON object
+    var start = cleaned.indexOf('{');
+    var end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end !== -1) {
+      cleaned = cleaned.substring(start, end + 1);
+    }
+    return JSON.parse(cleaned);
+  }
 
   function getSettings() {
     var diets = Array.from(document.querySelectorAll('#diet-tags .tag.active')).map(function (t) { return t.dataset.val; });
