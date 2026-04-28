@@ -535,13 +535,22 @@ document.addEventListener("DOMContentLoaded", function() {
 
   function parseJSON(raw) {
     var cleaned = raw.replace(/```json|```/g, '').trim();
-    // Find the first { and last } to extract just the JSON object
+    // Extract just the JSON object
     var start = cleaned.indexOf('{');
     var end = cleaned.lastIndexOf('}');
     if (start !== -1 && end !== -1) {
       cleaned = cleaned.substring(start, end + 1);
     }
-    return JSON.parse(cleaned);
+    // Log for debugging
+    console.log('Raw response length:', raw.length);
+    console.log('Cleaned JSON preview:', cleaned.substring(0, 200));
+    try {
+      return JSON.parse(cleaned);
+    } catch(e) {
+      console.error('Parse error at position:', e.message);
+      console.error('Context around error:', cleaned.substring(Math.max(0, parseInt(e.message.match(/\d+/) && e.message.match(/\d+/)[0]) - 50), parseInt(e.message.match(/\d+/) && e.message.match(/\d+/)[0]) + 50));
+      throw e;
+    }
   }
 
   function getSettings() {
